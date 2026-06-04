@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bauhaus To-Do List Pro Max</title>
+    <style>
+        /* ==================== CSS 外皮 ==================== */
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #EFEFEF;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 5vh;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .todo-container {
+            width: 100%;
+            max-width: 650px; 
+            background-color: #FFFFFF;
+            border: 4px solid #000000;
+            box-shadow: 12px 12px 0px #E52B11;
+            padding: 30px;
+        }
+
+        h1 {
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 4px solid #000000;
+            padding-bottom: 10px;
+        }
+
+        /* 🌟 升級：將輸入區塊改成具有秩序的上下兩列 */
+        .input-group {
+            display: flex;
+            flex-direction: column; /* 改為垂直排列 */
+            gap: 15px; /* 兩列之間的間距 */
+            margin-bottom: 30px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border: 2px dashed #000000;
+        }
+
+        /* 每一列的排版 */
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap; /* 預防手機版螢幕太小 */
+        }
+
+        input, select, button {
+            border: 2px solid #000000;
+            padding: 8px 12px;
+            font-size: 15px;
+            outline: none;
+            border-radius: 0;
+            font-family: inherit;
+        }
+
+        #task-input {
+            flex: 1; /* 讓輸入框自動填滿第一列的剩餘空間 */
+            min-width: 200px;
+        }
+
+        /* 🌟 找回包浩斯黃：統一所有分類選單的顏色 */
+        #category-select, .category-select-inline {
+            background-color: #F8D12F;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid #000;
+        }
+
+        .time-input {
+            background-color: #ffffff;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background-color: #1A5BB8;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s;
+            /* 讓新增按鈕在第二列自動靠右對齊 */
+            margin-left: auto; 
+            padding: 8px 25px;
+        }
+
+        .btn-primary:active {
+            transform: translate(2px, 2px);
+        }
+
+        /* 任務列表區塊 */
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            display: flex;
+            flex-direction: column; 
+            border: 2px solid #000000;
+            padding: 15px;
+            margin-bottom: 15px;
+            gap: 12px;
+            background-color: #FFFFFF;
+            position: relative;
+        }
+
+        .task-main {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding-right: 40px; /* 留空間給刪除按鈕，避免文字重疊 */
+        }
+
+        /* 將打勾框變大一點，更符合粗獷的風格 */
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .category-select-inline {
+            padding: 4px 8px;
+            font-size: 14px;
+        }
+
+        /* 🌟 讓卡片內的時間編輯區塊更優雅 */
+        .task-time-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 35px; /* 對齊 checkbox 後方的文字 */
+            flex-wrap: wrap; /* 空間不夠自動優雅換行 */
+        }
+
+        .time-edit {
+            border: 1px solid #ccc;
+            padding: 4px 8px;
+            font-size: 13px;
+            color: #333;
+        }
+
+        li.completed {
+            background-color: #EFEFEF;
+        }
+        li.completed .task-text {
+            text-decoration: line-through;
+            color: #888;
+        }
+        li.completed .task-time-row {
+            opacity: 0.5; /* 完成後連帶時間也變淡，降低視覺干擾 */
+        }
+
+        .delete-btn {
+            background-color: #E52B11;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-weight: bold;
+            position: absolute;
+            right: 15px;
+            top: 15px;
+        }
+        .delete-btn:hover {
+            background-color: #c4200b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="todo-container">
+        <h1>Task List Pro Max</h1>
+        
+        <div class="input-group">
+            <div class="input-row">
+                <input type="text" id="task-input" placeholder="新增待辦事項...">
+                <select id="category-select">
+                    <option value="工作">工作</option>
+                    <option value="個人">個人</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            <div class="input-row">
+                <input type="datetime-local" id="start-time" class="time-input" title="開始時間">
+                <span style="font-weight: bold;">~</span>
+                <input type="datetime-local" id="end-time" class="time-input" title="結束時間">
+                <button id="add-btn" class="btn-primary">新增</button>
+            </div>
+        </div>
+
+        <ul id="todo-list"></ul>
+    </div>
+
+    <script>
+        const taskInput = document.getElementById('task-input');
+        const categorySelect = document.getElementById('category-select');
+        const startTimeInput = document.getElementById('start-time');
+        const endTimeInput = document.getElementById('end-time');
+        const addBtn = document.getElementById('add-btn');
+        const todoList = document.getElementById('todo-list');
+
+        let todos = JSON.parse(localStorage.getItem('bauhaus_todos_pro')) || [];
+
+        function render() {
+            todoList.innerHTML = ""; 
+
+            todos.forEach(todo => {
+                const completedClass = todo.isCompleted ? 'completed' : '';
+                const isChecked = todo.isCompleted ? 'checked' : '';
+
+                todoList.innerHTML += `
+                    <li class="${completedClass}">
+                        <div class="task-main">
+                            <input type="checkbox" ${isChecked} onchange="toggleTodo(${todo.id})">
+                            <select class="category-select-inline" onchange="updateCategory(${todo.id}, this.value)">
+                                <option value="工作" ${todo.category === '工作' ? 'selected' : ''}>工作</option>
+                                <option value="個人" ${todo.category === '個人' ? 'selected' : ''}>個人</option>
+                                <option value="其他" ${todo.category === '其他' ? 'selected' : ''}>其他</option>
+                            </select>
+                            <span class="task-text">${todo.text}</span>
+                            <button class="delete-btn" onclick="deleteTodo(${todo.id})">X</button>
+                        </div>
+                        <div class="task-time-row">
+                            <span>🕒</span>
+                            <input type="datetime-local" class="time-edit" value="${todo.startTime}" onchange="updateTime(${todo.id}, 'start', this.value)">
+                            <span> ~ </span>
+                            <input type="datetime-local" class="time-edit" value="${todo.endTime}" onchange="updateTime(${todo.id}, 'end', this.value)">
+                        </div>
+                    </li>
+                `;
+            });
+
+            localStorage.setItem('bauhaus_todos_pro', JSON.stringify(todos));
+        }
+
+        function addTodo() {
+            const text = taskInput.value.trim();
+            const category = categorySelect.value;
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
+            
+            if (text === "") {
+                alert("請輸入任務名稱喔！");
+                return;
+            }
+
+            const newTodo = {
+                id: Date.now(),
+                text: text,
+                category: category,
+                startTime: startTime,
+                endTime: endTime,
+                isCompleted: false
+            };
+
+            todos.push(newTodo);
+            
+            taskInput.value = "";
+            startTimeInput.value = "";
+            endTimeInput.value = "";
+            render();
+        }
+
+        function updateCategory(id, newCategory) {
+            todos.forEach(todo => {
+                if (todo.id === id) todo.category = newCategory;
+            });
+            render();
+        }
+
+        function updateTime(id, type, newTime) {
+            todos.forEach(todo => {
+                if (todo.id === id) {
+                    if (type === 'start') todo.startTime = newTime;
+                    if (type === 'end') todo.endTime = newTime;
+                }
+            });
+            render();
+        }
+
+        function toggleTodo(id) {
+            todos.forEach(todo => {
+                if (todo.id === id) todo.isCompleted = !todo.isCompleted; 
+            });
+            render();
+        }
+
+        function deleteTodo(id) {
+            todos = todos.filter(todo => todo.id !== id);
+            render();
+        }
+
+        addBtn.addEventListener('click', addTodo);
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTodo();
+        });
+
+        render();
+    </script>
+</body>
+</html>

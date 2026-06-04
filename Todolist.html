@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bauhaus To-Do List</title>
+    <style>
+        /* ==================== CSS 外皮：包浩斯風格 ==================== */
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #EFEFEF; /* 偏灰白的畫布底色 */
+            display: flex;
+            justify-content: center; /* 水平置中 */
+            align-items: flex-start;
+            padding-top: 10vh;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .todo-container {
+            width: 100%;
+            max-width: 500px;
+            background-color: #FFFFFF;
+            border: 4px solid #000000; /* 標誌性的粗黑框 */
+            box-shadow: 12px 12px 0px #E52B11; /* 包浩斯紅的硬陰影 */
+            padding: 30px;
+        }
+
+        h1 {
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 4px solid #000000;
+            padding-bottom: 10px;
+        }
+
+        /* 搜尋框區塊排版 */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        input, select, button {
+            border: 2px solid #000000;
+            padding: 10px;
+            font-size: 16px;
+            outline: none;
+            border-radius: 0; /* 捨棄圓角，保持銳利 */
+        }
+
+        #task-input {
+            flex: 1; /* 輸入框自動填滿剩下的空間 */
+        }
+
+        #category-select {
+            background-color: #F8D12F; /* 包浩斯黃 */
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #add-btn {
+            background-color: #1A5BB8; /* 包浩斯藍 */
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        #add-btn:active {
+            transform: translate(2px, 2px); /* 點擊時的小動畫 */
+        }
+
+        /* 任務列表排版 */
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+            border: 2px solid #000000;
+            padding: 10px;
+            margin-bottom: 10px;
+            gap: 10px;
+            background-color: #FFFFFF;
+        }
+
+        .category-badge {
+            font-size: 12px;
+            padding: 2px 6px;
+            background-color: #000000;
+            color: white;
+            font-weight: bold;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 16px;
+        }
+
+        /* 當任務完成時的樣式 */
+        li.completed {
+            background-color: #EFEFEF;
+        }
+        li.completed .task-text {
+            text-decoration: line-through; /* 刪除線 */
+            color: #888;
+        }
+
+        .delete-btn {
+            background-color: #E52B11; /* 紅色刪除鈕 */
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="todo-container">
+        <h1>Task List</h1>
+        
+        <div class="input-group">
+            <input type="text" id="task-input" placeholder="新增待辦事項...">
+            <select id="category-select">
+                <option value="工作">工作</option>
+                <option value="個人">個人</option>
+                <option value="其他">其他</option>
+            </select>
+            <button id="add-btn">新增</button>
+        </div>
+
+        <ul id="todo-list"></ul>
+    </div>
+
+    <script>
+        // 抓取畫面上的元素
+        const taskInput = document.getElementById('task-input');
+        const categorySelect = document.getElementById('category-select');
+        const addBtn = document.getElementById('add-btn');
+        const todoList = document.getElementById('todo-list');
+
+        // 🧠 觀念一：LocalStorage (永久儲存) & 陣列管理
+        // 嘗試去倉庫(localStorage)找找看有沒有之前的資料。如果有就翻譯(parse)出來，沒有就給一個空陣列 []
+        let todos = JSON.parse(localStorage.getItem('bauhaus_todos')) || [];
+
+        // 🧠 觀念二：DOM 操作 (渲染畫面)
+        function render() {
+            todoList.innerHTML = ""; // 先清空箱子
+
+            // 迴圈把陣列裡的資料一個一個畫出來
+            todos.forEach(todo => {
+                // 檢查這個任務是否完成，如果是，就加上 'completed' 的 class
+                const completedClass = todo.isCompleted ? 'completed' : '';
+                // 檢查 checkbox 是否要打勾
+                const isChecked = todo.isCompleted ? 'checked' : '';
+
+                // 把資料塞進 HTML 模板裡
+                todoList.innerHTML += `
+                    <li class="${completedClass}">
+                        <input type="checkbox" ${isChecked} onchange="toggleTodo(${todo.id})">
+                        <span class="category-badge">${todo.category}</span>
+                        <span class="task-text">${todo.text}</span>
+                        <button class="delete-btn" onclick="deleteTodo(${todo.id})">X</button>
+                    </li>
+                `;
+            });
+
+            // 每次畫面更新完，順便把最新的陣列存進 LocalStorage 倉庫裡
+            localStorage.setItem('bauhaus_todos', JSON.stringify(todos));
+        }
+
+        // 🎯 功能：新增任務
+        function addTodo() {
+            const text = taskInput.value.trim();
+            const category = categorySelect.value;
+            
+            if (text === "") return; // 防呆：沒打字就不執行
+
+            const newTodo = {
+                id: Date.now(), // 用當下的時間戳記當作唯一的 ID
+                text: text,
+                category: category,
+                isCompleted: false // 預設是未完成
+            };
+
+            todos.push(newTodo); // 把新任務推進陣列裡
+            taskInput.value = ""; // 清空輸入框
+            render(); // 重新畫畫面
+        }
+
+        // 🎯 功能：打勾 / 取消打勾
+        function toggleTodo(id) {
+            // 在陣列中尋找這個 ID 的任務，並把它的 isCompleted 狀態「反轉」
+            todos.forEach(todo => {
+                if (todo.id === id) {
+                    todo.isCompleted = !todo.isCompleted; 
+                }
+            });
+            render(); // 更新陣列後，重新畫畫面
+        }
+
+        // 🎯 功能：刪除任務
+        function deleteTodo(id) {
+            // 用 filter (過濾) 把除了這個 ID 以外的任務留下來，等於是把這個 ID 刪除了
+            todos = todos.filter(todo => todo.id !== id);
+            render(); // 更新陣列後，重新畫畫面
+        }
+
+        // 綁定按鈕點擊事件
+        addBtn.addEventListener('click', addTodo);
+        
+        // 綁定鍵盤 Enter 事件，按 Enter 也能新增
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTodo();
+        });
+
+        // 網頁一打開時，先執行一次 render 把倉庫裡的資料畫出來
+        render();
+
+    </script>
+</body>
+</html>
